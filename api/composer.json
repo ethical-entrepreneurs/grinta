@@ -9,6 +9,7 @@
         "api-platform/core": "^2.4@beta",
         "doctrine/doctrine-migrations-bundle": "^2.0",
         "guzzlehttp/guzzle": "^6.3",
+        "phpunit/phpunit": "^8.0",
         "symfony/console": "4.2.*",
         "symfony/dotenv": "4.2.*",
         "symfony/flex": "^1.1",

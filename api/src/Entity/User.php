@@ -134,21 +134,21 @@ class User implements UserInterface
         return $this->teams;
     }
 
-    public function addScore(Team $score): self
+    public function addTeam(Team $team): self
     {
-        if (!$this->teams->contains($score)) {
-            $this->teams[] = $score;
-            $score->addUser($this);
+        if (!$this->teams->contains($team)) {
+            $this->teams[] = $team;
+            $team->addUser($this);
         }
 
         return $this;
     }
 
-    public function removeScore(Team $score): self
+    public function removeTeam(Team $team): self
     {
-        if ($this->teams->contains($score)) {
-            $this->teams->removeElement($score);
-            $score->removeUser($this);
+        if ($this->teams->contains($team)) {
+            $this->teams->removeElement($team);
+            $team->removeUser($this);
         }
 
         return $this;
