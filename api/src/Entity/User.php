@@ -43,6 +43,11 @@ class User implements UserInterface
      */
     private $teams;
 
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $decathlonConnectId;
+
     public function __construct()
     {
         $this->teams = new ArrayCollection();
@@ -150,6 +155,18 @@ class User implements UserInterface
             $this->teams->removeElement($team);
             $team->removeUser($this);
         }
+
+        return $this;
+    }
+
+    public function getDecathlonConnectId(): ?string
+    {
+        return $this->decathlonConnectId;
+    }
+
+    public function setDecathlonConnectId(?string $decathlonConnectId): self
+    {
+        $this->decathlonConnectId = $decathlonConnectId;
 
         return $this;
     }

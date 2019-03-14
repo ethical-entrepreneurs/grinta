@@ -8,6 +8,7 @@
         "api-platform/api-pack": "^1.1",
         "api-platform/core": "^2.4@beta",
         "doctrine/doctrine-migrations-bundle": "^2.0",
+        "emarref/jwt": "^1.0",
         "guzzlehttp/guzzle": "^6.3",
         "phpunit/phpunit": "^8.0",
         "symfony/console": "4.2.*",

@@ -46,7 +46,10 @@ class DecathlonConnectController extends AbstractController
 
             $content = json_decode($response->getBody()->getContents(), true);
             if (200 === $response->getStatusCode()) {
-                $result = array_merge($content, $this->decathlonConnect->profile($content['access_token']));
+                $result = array_merge(
+                    $content,
+                    $this->decathlonConnect->profile($content['access_token'])
+                );
 
                 return $this->json($result);
             }

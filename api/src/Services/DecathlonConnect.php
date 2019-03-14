@@ -2,9 +2,13 @@
 
 namespace App\Services;
 
+use App\Entity\User;
+use App\Repository\UserRepository;
+use Doctrine\Common\Persistence\ObjectManager;
 use GuzzleHttp\Client;
 use Psr\Http\Message\ResponseInterface;
 use Symfony\Component\Dotenv\Dotenv;
+use Emarref;
 
 class DecathlonConnect
 {
@@ -14,8 +18,10 @@ class DecathlonConnect
     private $CONNECT_REDIRECT_URI;
     private $PROFILE_BASE_URI;
     private $PROFILE_API_KEY;
+    private $userRepository;
+    private $manager;
 
-    public function __construct()
+    public function __construct(UserRepository $userRepository, ObjectManager $manager)
     {
         $dotenv = new Dotenv();
         $dotenv->load(__DIR__.'/../../.env');
@@ -25,6 +31,8 @@ class DecathlonConnect
         $this->CONNECT_CLIENT_ID = getenv('CONNECT_CLIENT_ID');
         $this->PROFILE_API_KEY = getenv('PROFILE_API_KEY');
         $this->PROFILE_BASE_URI = getenv('PROFILE_BASE_URI');
+        $this->userRepository = $userRepository;
+        $this->manager = $manager;
     }
 
     public function authorize(string $code): ResponseInterface
@@ -49,6 +57,10 @@ class DecathlonConnect
 
     public function profile(string $bearer): array
     {
+        $jwt = new Emarref\Jwt\Jwt();
+        $token = $jwt->deserialize($bearer);
+        $userId = $token->getPayload()->findClaimByName('sub')->getValue();
+
         $client = new Client([
             'base_uri' => $this->PROFILE_BASE_URI,
         ]);
@@ -62,9 +74,33 @@ class DecathlonConnect
                 ],
             ]);
 
-            return json_decode($response->getBody()->getContents(), true);
+            $internalUserId = $this->findUserDb($userId);
+
+            return array_merge(json_decode($response->getBody()->getContents(), true), ['user_id' => $internalUserId, 'decathlon_connect_id' => $userId]);
         } catch (RequestException $e) {
             return [];
         }
+    }
+
+    public function findUserDb(string $id): int
+    {
+        $user = $this
+            ->userRepository
+            ->findOneBy(['decathlonConnectId' => $id]);
+
+        if (!$user) {
+            $newUser = new User();
+            $newUser
+                ->setEmail('test@mail.com')
+                ->setPassword(uniqid())
+                ->setDecathlonConnectId($id)
+                ;
+            $this->manager->persist($newUser);
+            $this->manager->flush();
+
+            return $newUser->getId();
+        }
+
+        return $user->getId();
     }
 }
