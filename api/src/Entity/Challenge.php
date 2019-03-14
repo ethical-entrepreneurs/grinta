@@ -31,14 +31,13 @@ class Challenge
     private $teams;
 
     /**
-     * @ORM\OneToMany(targetEntity="App\Entity\Activity", mappedBy="challenge")
+     * @ORM\Column(type="string", length=255)
      */
-    private $activities;
+    private $activitiesGroup;
 
     public function __construct()
     {
         $this->teams = new ArrayCollection();
-        $this->activities = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -84,34 +83,13 @@ class Challenge
         return $this;
     }
 
-    /**
-     * @return Collection|Activity[]
-     */
-    public function getActivities(): Collection
+    public function getActivitiesGroup(): ?string
     {
-        return $this->activities;
+        return $this->activitiesGroup;
     }
 
-    public function addActivity(Activity $activity): self
+    public function setActivitiesGroup($activitiesGroup): void
     {
-        if (!$this->activities->contains($activity)) {
-            $this->activities[] = $activity;
-            $activity->setChallenge($this);
-        }
-
-        return $this;
-    }
-
-    public function removeActivity(Activity $activity): self
-    {
-        if ($this->activities->contains($activity)) {
-            $this->activities->removeElement($activity);
-            // set the owning side to null (unless already changed)
-            if ($activity->getChallenge() === $this) {
-                $activity->setChallenge(null);
-            }
-        }
-
-        return $this;
+        $this->activitiesGroup = $activitiesGroup;
     }
 }
