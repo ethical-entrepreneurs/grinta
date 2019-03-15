@@ -6,6 +6,7 @@ use App\Entity\User;
 use App\Repository\UserRepository;
 use Doctrine\Common\Persistence\ObjectManager;
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 use Psr\Http\Message\ResponseInterface;
 use Symfony\Component\Dotenv\Dotenv;
 use Emarref;
@@ -23,8 +24,8 @@ class DecathlonConnect
 
     public function __construct(UserRepository $userRepository, ObjectManager $manager)
     {
-        $dotenv = new Dotenv();
-        $dotenv->load(__DIR__.'/../../.env');
+        $dotEnv = new Dotenv();
+        $dotEnv->load(__DIR__.'/../../.env');
         $this->CONNECT_REDIRECT_URI = getenv('CONNECT_REDIRECT_URI');
         $this->CONNECT_BASE_URI = getenv('CONNECT_BASE_URI');
         $this->CONNECT_CLIENT_SECRET = getenv('CONNECT_CLIENT_SECRET');
@@ -61,39 +62,32 @@ class DecathlonConnect
         $token = $jwt->deserialize($bearer);
         $userId = $token->getPayload()->findClaimByName('sub')->getValue();
 
-        $client = new Client([
-            'base_uri' => $this->PROFILE_BASE_URI,
-        ]);
+        $identity = $this->requestSportsUser('sports_user/identity', $bearer);
+        $contact = $this->requestSportsUser('sports_user/contacts', $bearer);
 
-        try {
-            $response = $client->request('GET', 'sports_user/identity', [
-                'headers' => [
-                    'content-type' => 'application/json',
-                    'x-api-key' => $this->PROFILE_API_KEY,
-                    'authorization' => sprintf('Bearer %s', $bearer),
-                ],
-            ]);
+        $internalUserId = $this->findUserDb($userId, $contact);
 
-            $internalUserId = $this->findUserDb($userId);
-
-            return array_merge(json_decode($response->getBody()->getContents(), true), ['user_id' => $internalUserId, 'decathlon_connect_id' => $userId]);
-        } catch (RequestException $e) {
-            return [];
-        }
+        return array_merge(
+            $identity,
+            $contact,
+            ['user_id' => $internalUserId, 'decathlon_connect_id' => $userId]
+        );
     }
 
-    public function findUserDb(string $id): int
+    public function findUserDb(string $decathlonConnectId, array $contact): int
     {
         $user = $this
             ->userRepository
-            ->findOneBy(['decathlonConnectId' => $id]);
+            ->findOneBy(['decathlonConnectId' => $decathlonConnectId]);
 
         if (!$user) {
+            $email = $contact['email']['value'] ?? null;
             $newUser = new User();
+
             $newUser
-                ->setEmail('test@mail.com')
                 ->setPassword(uniqid())
-                ->setDecathlonConnectId($id)
+                ->setDecathlonConnectId($decathlonConnectId)
+                ->setEmail($email)
                 ;
             $this->manager->persist($newUser);
             $this->manager->flush();
@@ -102,5 +96,26 @@ class DecathlonConnect
         }
 
         return $user->getId();
+    }
+
+    private function requestSportsUser(string $endpoint, string $bearer): array
+    {
+        $client = new Client([
+            'base_uri' => $this->PROFILE_BASE_URI,
+        ]);
+
+        try {
+            $response = $client->request('GET', $endpoint, [
+                'headers' => [
+                    'content-type' => 'application/json',
+                    'x-api-key' => $this->PROFILE_API_KEY,
+                    'authorization' => sprintf('Bearer %s', $bearer),
+                ],
+            ]);
+
+            return json_decode($response->getBody()->getContents(), true);
+        } catch (RequestException $e) {
+            return [];
+        }
     }
 }
