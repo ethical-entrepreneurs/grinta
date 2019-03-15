@@ -24,8 +24,6 @@ class DecathlonConnect
 
     public function __construct(UserRepository $userRepository, ObjectManager $manager)
     {
-        $dotEnv = new Dotenv();
-        $dotEnv->load(__DIR__.'/../../.env');
         $this->CONNECT_REDIRECT_URI = getenv('CONNECT_REDIRECT_URI');
         $this->CONNECT_BASE_URI = getenv('CONNECT_BASE_URI');
         $this->CONNECT_CLIENT_SECRET = getenv('CONNECT_CLIENT_SECRET');
